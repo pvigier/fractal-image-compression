@@ -52,8 +52,21 @@ def find_contrast_and_brightness2(D, S):
 
 # Compression for greyscale images
 
-def compress(img):
+def generate_all_transformed_blocks(img, source_size, destination_size, step):
+	factor = source_size / destination_size
+	transformed_blocks = []
+	for k in range((img.shape[0] - source_size) // step + 1):
+		for l in range((img.shape[1] - source_size) // step + 1):
+			# Extract the source block and reduce it to the shape of a destination block
+			S = reduce(img[k*step:k*step+source_size,l*step:l*step+source_size], factor)
+			# Generate all possible transformed blocks
+			for direction, angle in candidates:
+				transformed_blocks.append((k, l, direction, angle, apply_transform(S, direction, angle)))
+	return transformed_blocks
+
+def compress(img, source_size, destination_size, step):
 	transforms = []
+	transformed_blocks = generate_all_transformed_blocks(img, source_size, destination_size, step)
 	for i in range(img.shape[0] // destination_size):
 		transforms.append([])
 		for j in range(img.shape[1] // destination_size):
@@ -62,22 +75,18 @@ def compress(img):
 			min_d = float('inf')
 			# Extract the destination block
 			D = img[i*destination_size:(i+1)*destination_size,j*destination_size:(j+1)*destination_size]
-			for k in range(img.shape[0] // step):
-				for l in range(img.shape[1] // step):
-					# Extract the source block and reduce it to the shape of D
-					S = reduce(img[k*step:k*step+source_size,l*step:l*step+source_size], factor)
-					# Test all possible transforms and take the best one
-					for direction, angle in candidates:
-						T = apply_transform(S, direction, angle)
-						contrast, brightness = find_contrast_and_brightness2(D, T)
-						T = contrast*T + brightness
-						d = np.sum(np.square(D - T))
-						if d < min_d:
-							min_d = d
-							transforms[i][j] = (k, l, direction, angle, contrast, brightness)
+			# Test all possible transforms and take the best one
+			for k, l, direction, angle, S in transformed_blocks:
+				contrast, brightness = find_contrast_and_brightness2(D, S)
+				S = contrast*S + brightness
+				d = np.sum(np.square(D - S))
+				if d < min_d:
+					min_d = d
+					transforms[i][j] = (k, l, direction, angle, contrast, brightness)
 	return transforms
 
-def decompress(transforms, nb_iter=8):
+def decompress(transforms, source_size, destination_size, step, nb_iter=8):
+	factor = source_size / destination_size
 	height = len(transforms) * destination_size
 	width = len(transforms[0]) * destination_size
 	iterations = [np.random.randint(0, 256, (height, width))]
@@ -104,19 +113,21 @@ def reduce_rgb(img, factor):
 	img_b = reduce(img_b, factor)
 	return assemble_rbg(img_r, img_g, img_b)
 
-def compress_rgb(img):
+def compress_rgb(img, source_size, destination_size, step):
 	img_r, img_g, img_b = extract_rgb(img)
-	return [compress(img_r), compress(img_g), compress(img_b)]
+	return [compress(img_r, source_size, destination_size, step), \
+		compress(img_g, source_size, destination_size, step), \
+		compress(img_b, source_size, destination_size, step)]
 
-def decompress_rgb(transforms, nb_iter=8):
-	img_r = decompress(transforms[0], nb_iter)[-1]
-	img_g = decompress(transforms[1], nb_iter)[-1]
-	img_b = decompress(transforms[2], nb_iter)[-1]
+def decompress_rgb(transforms, source_size, destination_size, step, nb_iter=8):
+	img_r = decompress(transforms[0], source_size, destination_size, step, nb_iter)[-1]
+	img_g = decompress(transforms[1], source_size, destination_size, step, nb_iter)[-1]
+	img_b = decompress(transforms[2], source_size, destination_size, step, nb_iter)[-1]
 	return assemble_rbg(img_r, img_g, img_b)
 
 # Plot
 
-def plot_iterations(iterations):
+def plot_iterations(iterations, target=None):
 	# Configure plot
 	plt.figure()
 	nb_row = math.ceil(np.sqrt(len(iterations)))
@@ -125,7 +136,11 @@ def plot_iterations(iterations):
 	for i, img in enumerate(iterations):
 		plt.subplot(nb_row, nb_cols, i+1)
 		plt.imshow(img, cmap='gray', vmin=0, vmax=255, interpolation='none')
-		plt.title(str(i))# + ' (' + '{0:.2f}'.format(np.sqrt(np.mean(np.square(img - cur_img)))) + ')')
+		if target is None:
+			plt.title(str(i))
+		else:
+			# Display the RMSE
+			plt.title(str(i) + ' (' + '{0:.2f}'.format(np.sqrt(np.mean(np.square(target - img)))) + ')')
 		frame = plt.gca()
 		frame.axes.get_xaxis().set_visible(False)
 		frame.axes.get_yaxis().set_visible(False)
@@ -136,10 +151,6 @@ def plot_iterations(iterations):
 directions = [1, -1]
 angles = [0, 90, 180, 270]
 candidates = list(zip(directions, angles))
-source_size = 8
-destination_size = 4
-factor = source_size / destination_size
-step = source_size
 
 # Tests
 
@@ -149,17 +160,17 @@ def test_greyscale():
 	img = reduce(img, 4)
 	plt.figure()
 	plt.imshow(img, cmap='gray', interpolation='none')
-	transforms = compress(img)
-	iterations = decompress(transforms)
-	plot_iterations(iterations)
+	transforms = compress(img, 8, 4, 8)
+	iterations = decompress(transforms, 8, 4, 8)
+	plot_iterations(iterations, img)
 	plt.show()
 
 def test_rgb():
 	img = mpimg.imread('lena.gif')
 	img = reduce_rgb(img, 8)
 	plt.imshow(np.array(img).astype(np.uint8), interpolation='none')
-	transforms = compress_rgb(img)
-	retrieved_img = decompress_rgb(transforms)
+	transforms = compress_rgb(img, 8, 4, 8)
+	retrieved_img = decompress_rgb(transforms, 8, 4, 8)
 	plt.figure()
 	plt.imshow(retrieved_img.astype(np.uint8), interpolation='none')
 	plt.show()
