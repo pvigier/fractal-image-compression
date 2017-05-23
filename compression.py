@@ -77,7 +77,7 @@ def compress(img):
 							transforms[i][j] = (k, l, direction, angle, contrast, brightness)
 	return transforms
 
-def uncompress(transforms, nb_iter=8):
+def decompress(transforms, nb_iter=8):
 	height = len(transforms) * destination_size
 	width = len(transforms[0]) * destination_size
 	iterations = [np.random.randint(0, 256, (height, width))]
@@ -108,10 +108,10 @@ def compress_rgb(img):
 	img_r, img_g, img_b = extract_rgb(img)
 	return [compress(img_r), compress(img_g), compress(img_b)]
 
-def uncompress_rgb(transforms, nb_iter=8):
-	img_r = uncompress(transforms[0], nb_iter)[-1]
-	img_g = uncompress(transforms[1], nb_iter)[-1]
-	img_b = uncompress(transforms[2], nb_iter)[-1]
+def decompress_rgb(transforms, nb_iter=8):
+	img_r = decompress(transforms[0], nb_iter)[-1]
+	img_g = decompress(transforms[1], nb_iter)[-1]
+	img_b = decompress(transforms[2], nb_iter)[-1]
 	return assemble_rbg(img_r, img_g, img_b)
 
 # Plot
@@ -150,7 +150,7 @@ def test_greyscale():
 	plt.figure()
 	plt.imshow(img, cmap='gray', interpolation='none')
 	transforms = compress(img)
-	iterations = uncompress(transforms)
+	iterations = decompress(transforms)
 	plot_iterations(iterations)
 	plt.show()
 
@@ -159,7 +159,7 @@ def test_rgb():
 	img = reduce_rgb(img, 8)
 	plt.imshow(np.array(img).astype(np.uint8), interpolation='none')
 	transforms = compress_rgb(img)
-	retrieved_img = uncompress_rgb(transforms)
+	retrieved_img = decompress_rgb(transforms)
 	plt.figure()
 	plt.imshow(retrieved_img.astype(np.uint8), interpolation='none')
 	plt.show()
