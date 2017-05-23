@@ -123,7 +123,6 @@ def plot_iterations(iterations):
 	nb_cols = nb_row
 	# Plot
 	for i, img in enumerate(iterations):
-		print(img.shape)
 		plt.subplot(nb_row, nb_cols, i+1)
 		plt.imshow(img, cmap='gray', vmin=0, vmax=255, interpolation='none')
 		plt.title(str(i))# + ' (' + '{0:.2f}'.format(np.sqrt(np.mean(np.square(img - cur_img)))) + ')')
