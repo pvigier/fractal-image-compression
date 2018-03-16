@@ -53,7 +53,7 @@ def find_contrast_and_brightness2(D, S):
 # Compression for greyscale images
 
 def generate_all_transformed_blocks(img, source_size, destination_size, step):
-	factor = source_size / destination_size
+	factor = source_size // destination_size
 	transformed_blocks = []
 	for k in range((img.shape[0] - source_size) // step + 1):
 		for l in range((img.shape[1] - source_size) // step + 1):
@@ -86,7 +86,7 @@ def compress(img, source_size, destination_size, step):
 	return transforms
 
 def decompress(transforms, source_size, destination_size, step, nb_iter=8):
-	factor = source_size / destination_size
+	factor = source_size // destination_size
 	height = len(transforms) * destination_size
 	width = len(transforms[0]) * destination_size
 	iterations = [np.random.randint(0, 256, (height, width))]
@@ -125,14 +125,14 @@ def decompress_rgb(transforms, source_size, destination_size, step, nb_iter=8):
 	img_b = decompress(transforms[2], source_size, destination_size, step, nb_iter)[-1]
 	return assemble_rbg(img_r, img_g, img_b)
 
-# Plot
+# Plot
 
 def plot_iterations(iterations, target=None):
 	# Configure plot
 	plt.figure()
 	nb_row = math.ceil(np.sqrt(len(iterations)))
 	nb_cols = nb_row
-	# Plot
+	# Plot
 	for i, img in enumerate(iterations):
 		plt.subplot(nb_row, nb_cols, i+1)
 		plt.imshow(img, cmap='gray', vmin=0, vmax=255, interpolation='none')
@@ -146,7 +146,7 @@ def plot_iterations(iterations, target=None):
 		frame.axes.get_yaxis().set_visible(False)
 	plt.tight_layout()
 
-# Parameters
+# Parameters
 
 directions = [1, -1]
 angles = [0, 90, 180, 270]
