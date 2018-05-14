@@ -18,7 +18,7 @@ def assemble_rbg(img_r, img_g, img_b):
     return np.concatenate((np.reshape(img_r, shape), np.reshape(img_g, shape), 
         np.reshape(img_b, shape)), axis=2)
 
-# Transforms
+# Transformations
 
 def reduce(img, factor):
     result = np.zeros((img.shape[0] // factor, img.shape[1] // factor))
@@ -77,7 +77,7 @@ def compress(img, source_size, destination_size, step):
             min_d = float('inf')
             # Extract the destination block
             D = img[i*destination_size:(i+1)*destination_size,j*destination_size:(j+1)*destination_size]
-            # Test all possible transforms and take the best one
+            # Test all possible transformations and take the best one
             for k, l, direction, angle, S in transformed_blocks:
                 contrast, brightness = find_contrast_and_brightness2(D, S)
                 S = contrast*S + brightness
@@ -121,10 +121,10 @@ def compress_rgb(img, source_size, destination_size, step):
         compress(img_g, source_size, destination_size, step), \
         compress(img_b, source_size, destination_size, step)]
 
-def decompress_rgb(transforms, source_size, destination_size, step, nb_iter=8):
-    img_r = decompress(transforms[0], source_size, destination_size, step, nb_iter)[-1]
-    img_g = decompress(transforms[1], source_size, destination_size, step, nb_iter)[-1]
-    img_b = decompress(transforms[2], source_size, destination_size, step, nb_iter)[-1]
+def decompress_rgb(transformations, source_size, destination_size, step, nb_iter=8):
+    img_r = decompress(transformations[0], source_size, destination_size, step, nb_iter)[-1]
+    img_g = decompress(transformations[1], source_size, destination_size, step, nb_iter)[-1]
+    img_b = decompress(transformations[2], source_size, destination_size, step, nb_iter)[-1]
     return assemble_rbg(img_r, img_g, img_b)
 
 # Plot
@@ -162,18 +162,20 @@ def test_greyscale():
     img = reduce(img, 4)
     plt.figure()
     plt.imshow(img, cmap='gray', interpolation='none')
-    transforms = compress(img, 8, 4, 8)
-    iterations = decompress(transforms, 8, 4, 8)
+    transformations = compress(img, 8, 4, 8)
+    iterations = decompress(transformations, 8, 4, 8)
     plot_iterations(iterations, img)
     plt.show()
 
 def test_rgb():
     img = mpimg.imread('lena.gif')
     img = reduce_rgb(img, 8)
-    plt.imshow(np.array(img).astype(np.uint8), interpolation='none')
-    transforms = compress_rgb(img, 8, 4, 8)
-    retrieved_img = decompress_rgb(transforms, 8, 4, 8)
+    transformations = compress_rgb(img, 8, 4, 8)
+    retrieved_img = decompress_rgb(transformations, 8, 4, 8)
     plt.figure()
+    plt.subplot(121)
+    plt.imshow(np.array(img).astype(np.uint8), interpolation='none')
+    plt.subplot(122)
     plt.imshow(retrieved_img.astype(np.uint8), interpolation='none')
     plt.show()
                     
