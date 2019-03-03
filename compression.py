@@ -152,7 +152,7 @@ def plot_iterations(iterations, target=None):
 
 directions = [1, -1]
 angles = [0, 90, 180, 270]
-candidates = list(zip(directions, angles))
+candidates = [[direction, angle] for direction in directions for angle in angles]
 
 # Tests
 
