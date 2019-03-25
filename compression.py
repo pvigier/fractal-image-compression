@@ -69,10 +69,12 @@ def generate_all_transformed_blocks(img, source_size, destination_size, step):
 def compress(img, source_size, destination_size, step):
     transformations = []
     transformed_blocks = generate_all_transformed_blocks(img, source_size, destination_size, step)
-    for i in range(img.shape[0] // destination_size):
+    i_count = img.shape[0] // destination_size
+    j_count = img.shape[1] // destination_size
+    for i in range(i_count):
         transformations.append([])
-        for j in range(img.shape[1] // destination_size):
-            print(i, j)
+        for j in range(j_count):
+            print("{}/{} ; {}/{}".format(i, i_count, j, j_count))
             transformations[i].append(None)
             min_d = float('inf')
             # Extract the destination block
